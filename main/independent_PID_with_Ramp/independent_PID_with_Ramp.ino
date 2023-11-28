@@ -35,6 +35,12 @@ float kd_right = 0.0001;
 float ki_right = 0.000001;
 uint32_t kob_right = 261;
 
+uint32_t E = 5;
+uint32_t max_speed_left = 200;
+uint32_t max_speed_right = 200;
+uint32_t distance_left = 5;
+uint32_t distance_right = 5;
+
 
 void setTimer2Interrupt(bool enableInterrupt) {
   if (enableInterrupt) {
@@ -148,11 +154,6 @@ ISR(TIMER1_OVF_vect) {
 }
 
 ISR(TIMER2_OVF_vect) {
-  uint32_t E = 5;
-  uint32_t max_speed_left = 200;
-  uint32_t max_speed_right = 200;
-  uint32_t distance_left = 5;
-  uint32_t distance_right = 5;
   RampGenerator(E, max_speed_left, max_speed_right, distance_left, distance_right);
 }
 
