@@ -21,28 +21,28 @@ int gRightTask = 0;
 int gLeftCounter = 0;
 int gRightCounter = 0;
 
-uint32_t prev_err_left = 0;
+int32_t prev_err_left = 0;
 uint32_t prev_ticks_left = 0;
-uint32_t error_i_left = 0;
-float control_left;
-uint32_t given_speed_left;
-uint32_t current_speed_left;
+int32_t error_i_left = 0;
+uint8_t control_left;
+int32_t given_speed_left;
+int32_t current_speed_left;
 
-uint32_t prev_err_right = 0;
+int32_t prev_err_right = 0;
 uint32_t prev_ticks_right = 0;
-uint32_t error_i_right = 0;
-float control_right;
-uint32_t given_speed_right;
-uint32_t current_speed_right;
+int32_t error_i_right = 0;
+uint8_t control_right;
+int32_t given_speed_right;
+int32_t current_speed_right;
 
-float kp_left = 5.1;
-float kd_left = 0.0001;
-float ki_left = 0.000001;
+float kp_left = 3;
+float kd_left = 0;
+float ki_left = 0.01;
 uint32_t kob_left = 258;
 
-float kp_right = 5.1;
-float kd_right = 0.0001;
-float ki_right = 0.000001;
+float kp_right = 3;
+float kd_right = 0;
+float ki_right = 0.01;
 uint32_t kob_right = 261;
 
 int32_t gE;
@@ -51,13 +51,17 @@ int32_t gmax_speed_right;
 int32_t gdistance_left;
 int32_t gdistance_right;
 
+int32_t error_left = 0;
+int32_t error_right = 0;
 
 void executeCommand(char command) {
   switch (command) {
     case FORWARD:
+      Serial.println("go");
       move_forward();
       break;
     case BACKWARD:
+    //Serial.println("BACK");
       move_backward();
       break;
     case LEFT:
@@ -67,26 +71,27 @@ void executeCommand(char command) {
       move_right();
       break;
     default:
-      stop();
+      stop_move();
       break;
   }
 }
 
 void move_forward() {
-  doMove(5, 200, 200, 10, 10);
+  doMove(20, 20, 50, 50, 1);
 }
 
 void move_backward() {
-  doMove(5, 200, 200, -10, -10);
+  doMove(10, 10, -50, -50, -1);
 }
 void move_left() {
-  doMove(5, 200, 200, 10, -10);
+  doMove(20, -20, 50, 50, 1);
 }
 void move_right() {
-  doMove(5, 200, 200, -10, 10);
+  doMove(-20, 20, 50, 50, 1);
 }
-void stop() {
-  doMove(0, 0, 0, 0, 0);
+void stop_move() {
+  analogWrite(LEFT_AN, 0);
+  analogWrite(RIGHT_AN, 0);
 }
 
 void setTimer2Interrupt(bool enableInterrupt) {
@@ -99,55 +104,23 @@ void setTimer2Interrupt(bool enableInterrupt) {
   }
 }
 
+bool accelerating_left = false;
+bool decelerating_left = false;
+bool accelerating_right = false;
+bool decelerating_right = false;
+int32_t gAccelaration;
 void RampGenerator() {
-  given_speed_left = 0;
-  given_speed_right = 0;
-  gdistance_right = gdistance_right * kob_right;
-  gdistance_left = gdistance_left * kob_left;
-  float S_left = gLeftCounter / kob_left;
-  float S_right = gRightCounter / kob_right;
-  if (given_speed_left < abs(gmax_speed_left)) {
-    if (gmax_speed_left >= 0) {
-      given_speed_left += gE;
-    } else {
-      given_speed_left -= gE;
-    }
-  } else {
-    float S_usk_left = gLeftCounter / kob_left;
-    given_speed_left = gmax_speed_left;
-    if (S_left > gdistance_left - 2 * S_usk_left) {
-      if (gmax_speed_left >= 0) {
-        given_speed_left -= gE;
-      } else {
-        given_speed_left += gE;
-      }
-      if (given_speed_left < 0) {
-        given_speed_left = 0;
-      }
-    }
+  if (accelerating_left) {
+    given_speed_left += gAccelaration;
   }
-  if (given_speed_right < abs(gmax_speed_right)) {
-    if (gmax_speed_left >= 0) {
-      given_speed_right += gE;
-    } else {
-      given_speed_right -= gE;
-    }
-  } else {
-    float S_usk_right = gRightCounter / kob_right;
-    given_speed_right = gmax_speed_right;
-    if (S_right > gdistance_right - 2 * S_usk_right) {
-      if (gmax_speed_left >= 0) {
-        given_speed_right -= gE;
-      } else {
-        given_speed_right += gE;
-      }
-      if (given_speed_right < 0) {
-        given_speed_right = 0;
-      }
-    }
+  if (decelerating_left) {
+    given_speed_left -= gAccelaration;
   }
-  if (given_speed_right == 0 && given_speed_left == 0) {
-    setTimer2Interrupt(true);
+  if (accelerating_right) {
+    given_speed_right += gAccelaration;
+  }
+  if (decelerating_right) {
+    given_speed_right -= gAccelaration;
   }
 }
 
@@ -167,9 +140,8 @@ void setup() {
   pinMode(RIGHT_CW, OUTPUT);
 
   Serial.begin(9600);
-  Serial.setTimeout(50);
-  Serial.flush();
-  Serial.println("left");
+  //Serial.flush();
+  //Serial.println("left");
 
   TCCR1A = 0;  // установить TCCR1A регистр в 0
   TCCR1B = 0;
@@ -198,21 +170,53 @@ void rightPulse() {
 }
 
 ISR(TIMER1_OVF_vect) {
-
-  current_speed_left = gLeftCounter - prev_ticks_left;
+current_speed_left = gLeftCounter - prev_ticks_left;
   current_speed_right = gRightCounter - prev_ticks_right;
 
-  uint32_t error_left = given_speed_left - current_speed_left;
-  uint32_t error_right = given_speed_right - current_speed_right;
+  error_left = given_speed_left - current_speed_left;
+  error_right = given_speed_right - current_speed_right;
 
-  uint32_t error_d_left = error_left - prev_err_left;
-  uint32_t error_d_right = error_right - prev_err_right;
+  int32_t error_d_left = error_left - prev_err_left;
+  int32_t error_d_right = error_right - prev_err_right;
 
-  uint32_t error_i_left = error_i_left + error_left;
-  uint32_t error_i_right = error_i_right + error_right;
+  error_i_left = error_i_left + error_left;
+  error_i_right = error_i_right + error_right;
+  if (error_i_left > 1000) {
+    error_i_left = 1000;
+  }
+  if (error_i_right > 1000) {
+    error_i_right = 1000;
+  }
+  int32_t lcontrol_left = error_left * kp_left + error_d_left * kd_left + error_i_left * ki_left;
+  int32_t lcontrol_right = error_right * kp_right + error_d_right * kd_right + error_i_right * ki_right;
 
-  control_left = error_left * kp_left + error_d_left * kd_left + error_i_left * ki_left;
-  control_right = error_right * kp_right + error_d_right * kd_right + error_i_right * ki_right;
+  if (lcontrol_left <= 0) {
+    //reverse
+    digitalWrite(LEFT_CW, LOW);
+    lcontrol_left = -lcontrol_left;
+  } else {
+    digitalWrite(LEFT_CW, HIGH);
+  }
+  if (lcontrol_right <= 0) {
+    //reverse
+    lcontrol_right = -lcontrol_right;
+    digitalWrite(RIGHT_CW, HIGH);
+  } else {
+    digitalWrite(RIGHT_CW, LOW);
+  }
+
+
+  if (lcontrol_left > 255) {
+    control_left = 255;
+  } else {
+    control_left = lcontrol_left;
+  }
+  if (lcontrol_right > 255) {
+    control_right = 255;
+  } else {
+    control_right = lcontrol_right;
+  }
+
 
   prev_err_left = error_left;
   prev_err_right = error_right;
@@ -221,40 +225,71 @@ ISR(TIMER1_OVF_vect) {
   prev_ticks_right = gRightCounter;
 }
 
+uint32_t countfortimer = 0;
+unsigned long currentTime;
+unsigned long lastTime;
+float timeDelta;
 ISR(TIMER2_OVF_vect) {
-  RampGenerator();
+  if (countfortimer % 100 == 0) {
+    currentTime = millis();
+    timeDelta = (currentTime - lastTime) / 1000.0;  // разница времени в секундах
+    lastTime = currentTime;
+    RampGenerator();
+  }
+  countfortimer++;
 }
 
 //int speed, int distance
-void doMove(int32_t E, int32_t max_speed_left, int32_t max_speed_right, int32_t distance_left, int32_t distance_right) {
-  gE = E;
-  gmax_speed_left = max_speed_left;
-  if (distance_left < 0) {
-    gmax_speed_left = -max_speed_left;
+void doMove(int32_t distance_left, int32_t distance_right, int32_t speed_left, int32_t speed_right, int32_t E) {
+  gAccelaration = E;
+  distance_left = distance_left * kob_left;
+  uint32_t S_usk_left = 1500;
+  if (gLeftCounter < S_usk_left) {
+    accelerating_left = true;
+    decelerating_left = false;
+  } else {
+    accelerating_left = false;
   }
-  gmax_speed_right = max_speed_right;
-  if (gdistance_right < 0) {
-    gmax_speed_right = -max_speed_right;
+  if (gLeftCounter > distance_left - S_usk_left) {
+    decelerating_left = true;
+    if (given_speed_left >= 0) {
+      given_speed_left = 9;
+      accelerating_left = false;
+      decelerating_left = false;
+      //setTimer2Interrupt(false);
+    }
   }
-  gdistance_left = distance_left;
-  gdistance_right = distance_right;
-  setTimer2Interrupt(true);
-  gRightCounter = 0;
-  gLeftCounter = 0;
-  digitalWrite(LEFT_CW, HIGH);
-  digitalWrite(RIGHT_CW, LOW);
+  distance_right = distance_right * kob_right;
+  uint32_t S_usk_right = 1500;
+  if (gRightCounter < S_usk_right) {
+    accelerating_right = true;
+    decelerating_right = false;
+  } else {
+    accelerating_right = false;
+  }
+  if (gRightCounter > distance_right - S_usk_right) {
+    decelerating_right = true;
+    if (given_speed_right >= 0) {//>= - reverse  <= - !reverse
+      given_speed_right = 9; // почти стоп (очень медленно) 
+      accelerating_right = false;
+      decelerating_right = false;
+      //setTimer2Interrupt(false);
+    }
+  }
+  
   analogWrite(LEFT_AN, control_left);
   analogWrite(RIGHT_AN, control_right);
-  Serial.print(gLeftCounter);
+  Serial.print(control_left);
   Serial.print(',');
-  Serial.println(gRightCounter);
+  Serial.println(control_right);
   return 0;
 }
-
+char gcommand;
 void loop() {
   // put your main code here, to run repeatedly:
   if (Serial.available()) {
     char command = Serial.read();
-    executeCommand(command);
+    gcommand=command;
   }
+  executeCommand(gcommand);
 }
