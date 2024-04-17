@@ -1,0 +1,13 @@
+https://habr.com/ru/articles/441322/ - что в сердце у беспилотника
+https://cyberleninka.ru/article/n/arhitektura-avtonomnyh-bespilotnyh-avtomobiley-i-infrastruktura-dlya-ih-ekspluatatsii - Архитектура автономных (беспилотных) автомобилей и инфраструктура для их эксплуатации
+https://www.iphones.ru/iNotes/self-driving-vehicles-how-it-works - Разобрали принцип работы автопилотов в современных авто. 
+https://thecode.media/self-drive/  - Как устроены беспилотные автомобили
+https://vc.ru/transport/48947-bespilotnye-avtomobili-obyasnenie-6-urovney-avtonomnosti - 6 уровней автопилота
+https://www.gtlk.ru/press_room/drone/?ysclid=lr7r6be330760431238 - ТРАНСПОРТ В ДЕТАЛЯХ.БЕСПИЛОТНЫЕ ТЕХНОЛОГИИ НА ЗЕМЛЕ, ВОДЕ И В ВОЗДУХЕ
+https://habr.com/ru/companies/wayray/articles/407775/ - «Машинное» зрение: что и как видят автомобили
+https://deci.ai/blog/digital-eyes-on-the-road-computer-vision-in-the-auto-industry/ - Digital Eyes on the Road: Computer Vision in the Auto Industry
+https://www.superannotate.com/blog/computer-vision-in-autonomous-vehicles - Проблемы компьютерного зрения в автономных транспортных средствах: будущее ИИ
+https://www.thinkautonomous.ai/blog/computer-vision-applications-in-self-driving-cars/ - Computer Vision Applications in Self-Driving Cars
+https://vision-tech.pro/articles/kratkaya-istoriya-mashinnogo-zreniya/ - КРАТКАЯ ИСТОРИЯ МАШИННОГО ЗРЕНИЯ
+https://www.yourtodo.ru/posts/svertochnyie-nejronnyie-seti-cnn/?ysclid=lskq9vfdrj647979374 - Сверточные нейронные сети (CNN)
+https://www.ibm.com/topics/convolutional-neural-networks - Что такое сверточные нейронные сети?
